@@ -1812,16 +1812,25 @@ pub fn create_handle(&self) -> (NodeHandle, tokio::sync::mpsc::Receiver<NodeComm
                             }
                         }
                         NodeCommand::FinishSyncHeadersChunk { peer, headers, is_valid } => {
+                            if let Some(s) = &mut self.sync_session {
+                                s.last_progress_at = std::time::Instant::now();
+                            }
                             if let Err(e) = self.process_verified_headers_chunk(peer, headers, is_valid).await {
                                 tracing::warn!("Failed to process headers chunk: {}", e);
                             }
                         }
                         NodeCommand::FinishSyncBatchesChunk { peer, headers, fork_height, candidate_state, cursor, new_history, is_fast_forward, is_valid, error_msg, session_started_at, peer_height, peer_depth } => {
+                            if let Some(s) = &mut self.sync_session {
+                                s.last_progress_at = std::time::Instant::now();
+                            }
                             if let Err(e) = self.process_verified_batches_chunk(peer, headers, fork_height, candidate_state, cursor, new_history, is_fast_forward, is_valid, error_msg, session_started_at, peer_height, peer_depth).await {
                                 tracing::warn!("Error processing verified batches chunk: {}", e);
                             }
                         }
                         NodeCommand::FinishStateRebuild { peer, fork_height, candidate_state, headers, is_fast_forward, is_valid, is_local_corruption } => {
+                            if let Some(s) = &mut self.sync_session {
+                                s.last_progress_at = std::time::Instant::now();
+                            }
                             if is_local_corruption {
                                 tracing::error!("Local database corruption detected during state rebuild. Initiating self-healing rollback...");
                                 self.self_heal_rollback(fork_height).await;
